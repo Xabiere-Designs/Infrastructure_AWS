@@ -47,6 +47,12 @@ variable "private_subnet_id" {
   type        = string
 }
 
+# Static private IP used by NGINX to route traffic to web2
+variable "web2_private_ip" {
+  description = "Static private IP assigned to the web2 application server"
+  type        = string
+}
+
 # Startup script executed during web1 provisioning
 variable "web1_user_data" {
   description = "User data script executed during web1 instance startup"

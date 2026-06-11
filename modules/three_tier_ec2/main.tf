@@ -4,7 +4,7 @@ resource "aws_security_group" "web1_sg" {
   description = "Allow SSH and HTTP to web1"
   vpc_id      = var.vpc_id
 
-  # Allow administrative SSH access
+  # Allow administrative SSH access from the approved public IP
   ingress {
     description = "SSH from allowed IP"
     from_port   = 22
@@ -13,7 +13,7 @@ resource "aws_security_group" "web1_sg" {
     cidr_blocks = [var.my_ip_cidr]
   }
 
-  # Allow public web traffic
+  # Allow public HTTP traffic to NGINX
   ingress {
     description = "HTTP from internet"
     from_port   = 80
@@ -22,7 +22,7 @@ resource "aws_security_group" "web1_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Allow outbound connectivity
+  # Allow web1 to reach package repos, Docker Hub, and private app tier
   egress {
     description = "Allow outbound traffic"
     from_port   = 0
@@ -42,7 +42,7 @@ resource "aws_security_group" "web2_sg" {
   description = "Allow web1 to reach web2"
   vpc_id      = var.vpc_id
 
-  # Allow SSH only from web1
+  # Allow SSH to web2 only through web1/bastion
   ingress {
     description     = "SSH from web1"
     from_port       = 22
@@ -51,7 +51,7 @@ resource "aws_security_group" "web2_sg" {
     security_groups = [aws_security_group.web1_sg.id]
   }
 
-  # Allow Tomcat traffic only from web1
+  # Allow NGINX on web1 to proxy traffic to Tomcat on web2
   ingress {
     description     = "Tomcat from web1"
     from_port       = 8080
@@ -60,7 +60,7 @@ resource "aws_security_group" "web2_sg" {
     security_groups = [aws_security_group.web1_sg.id]
   }
 
-  # Allow outbound connectivity
+  # Allow web2 to reach package repos and pull images through NAT
   egress {
     description = "Allow outbound traffic"
     from_port   = 0
@@ -95,6 +95,7 @@ resource "aws_instance" "web2" {
   instance_type               = var.instance_type
   key_name                    = var.key_name
   subnet_id                   = var.private_subnet_id
+  private_ip                  = var.web2_private_ip
   vpc_security_group_ids      = [aws_security_group.web2_sg.id]
   associate_public_ip_address = false
   user_data                   = var.web2_user_data

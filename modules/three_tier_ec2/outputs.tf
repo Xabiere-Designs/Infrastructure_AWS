@@ -33,3 +33,15 @@ output "web2_security_group_id" {
   description = "Security group ID attached to web2"
   value       = aws_security_group.web2_sg.id
 }
+
+# Security group ID for monitoring server, used to allow access from web1/bastion
+output "web1_security_group_id" {
+  description = "Security group ID for web1 bastion server"
+  value       = aws_security_group.web1_sg.id
+}
+
+# Security group ID for monitoring server, used to allow access from web1/bastion
+output "web2_security_group_id" {
+  description = "Security group ID for web2 application server"
+  value       = aws_security_group.web2_sg.id
+}

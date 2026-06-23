@@ -56,6 +56,8 @@ resource "aws_instance" "monitoring" {
   associate_public_ip_address = false
   user_data                   = var.monitoring_user_data
 
+  user_data_replace_on_change = true
+
   tags = merge(var.tags, {
     Name = "${var.project_name}-monitoring"
     Role = "monitoring"

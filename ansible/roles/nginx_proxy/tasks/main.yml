@@ -7,7 +7,7 @@
 - name: Deploy monitoring reverse proxy config
   template:
     src: monitoring.conf.j2
-    dest: /etc/nginx/conf.d/monitoring.conf
+    dest: /etc/nginx/nginx.conf
     mode: "0644"
 
 - name: Test NGINX config

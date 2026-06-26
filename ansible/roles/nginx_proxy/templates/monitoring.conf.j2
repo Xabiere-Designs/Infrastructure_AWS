@@ -1,0 +1,16 @@
+server {
+    listen 80;
+    server_name _;
+
+    location /grafana/ {
+        proxy_pass http://{{ monitoring_private_ip }}:3000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /prometheus/ {
+        proxy_pass http://{{ monitoring_private_ip }}:9090/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}

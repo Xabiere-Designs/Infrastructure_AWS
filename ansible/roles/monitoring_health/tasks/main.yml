@@ -1,0 +1,15 @@
+---
+- name: Check Prometheus
+  uri:
+    url: http://localhost:9090/-/ready
+    status_code: 200
+
+- name: Check Node Exporter
+  uri:
+    url: http://localhost:9100/metrics
+    status_code: 200
+
+- name: Check Grafana
+  uri:
+    url: http://localhost:3000/login
+    status_code: 200

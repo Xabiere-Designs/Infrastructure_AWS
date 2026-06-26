@@ -1,0 +1,12 @@
+---
+- name: Configure web1 NGINX reverse proxy
+  hosts: web_servers
+  become: true
+  roles:
+    - nginx_proxy
+
+- name: Validate monitoring stack health
+  hosts: monitoring_servers
+  become: true
+  roles:
+    - monitoring_health

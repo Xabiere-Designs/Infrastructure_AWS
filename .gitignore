@@ -4,3 +4,6 @@
 *.tfstate.*
 *.tfplan
 .terraform.lock.hcl
+ansible/inventory/hosts.ini
+ansible/group_vars/all.yml
+*.pem

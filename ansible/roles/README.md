@@ -1,0 +1,3 @@
+Migrated the monitoring stack from a one-time bootstrap shell script into reusable Ansible roles inside the Infrastructure_AWS platform repository. Prometheus, Node Exporter, and Grafana are now managed as configuration-as-code, with Prometheus scrape configuration, alert rules, and recording rules versioned in the repository.
+
+This change separates infrastructure provisioning from configuration management. Terraform remains responsible for creating the monitoring EC2 infrastructure, while Ansible manages the runtime configuration of Prometheus, Grafana, and Node Exporter. This improves repeatability, maintainability, and prepares the platform for future Alertmanager integration and CI-based Prometheus rule validation.

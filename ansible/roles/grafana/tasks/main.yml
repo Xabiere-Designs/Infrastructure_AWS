@@ -1,0 +1,33 @@
+---
+- name: Add Grafana yum repo
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/grafana.repo
+    mode: "0644"
+    content: |
+      [grafana]
+      name=grafana
+      baseurl=https://rpm.grafana.com
+      enabled=1
+      gpgcheck=0
+      repo_gpgcheck=0
+      sslverify=1
+
+- name: Clean yum metadata
+  ansible.builtin.command: yum clean all
+  changed_when: false
+
+- name: Rebuild yum cache
+  ansible.builtin.command: yum makecache -y
+  changed_when: false
+
+- name: Install Grafana
+  ansible.builtin.yum:
+    name: grafana
+    state: present
+
+- name: Enable and start Grafana
+  ansible.builtin.systemd:
+    name: grafana-server
+    enabled: true
+    state: restarted
+    daemon_reload: true

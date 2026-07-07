@@ -1,0 +1,140 @@
+---
+- name: Update yum packages
+  ansible.builtin.yum:
+    name: "*"
+    state: latest
+
+- name: Install required packages
+  ansible.builtin.yum:
+    name:
+      - wget
+      - tar
+      - firewalld
+    state: present
+
+- name: Create prometheus user
+  ansible.builtin.user:
+    name: prometheus
+    shell: /bin/false
+    create_home: false
+    system: true
+
+- name: Download Prometheus
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/prometheus/releases/download/v2.54.1/prometheus-2.54.1.linux-amd64.tar.gz"
+    dest: /tmp/prometheus-2.54.1.linux-amd64.tar.gz
+    mode: "0644"
+
+- name: Extract Prometheus
+  ansible.builtin.unarchive:
+    src: /tmp/prometheus-2.54.1.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: true
+
+- name: Copy Prometheus binary
+  ansible.builtin.copy:
+    src: /tmp/prometheus-2.54.1.linux-amd64/prometheus
+    dest: /usr/local/bin/prometheus
+    owner: prometheus
+    group: prometheus
+    mode: "0755"
+    remote_src: true
+
+- name: Copy promtool binary
+  ansible.builtin.copy:
+    src: /tmp/prometheus-2.54.1.linux-amd64/promtool
+    dest: /usr/local/bin/promtool
+    owner: prometheus
+    group: prometheus
+    mode: "0755"
+    remote_src: true
+
+- name: Create Prometheus directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: "0755"
+  loop:
+    - /etc/prometheus
+    - /etc/prometheus/rules
+    - /var/lib/prometheus
+
+- name: Copy Prometheus consoles
+  ansible.builtin.copy:
+    src: /tmp/prometheus-2.54.1.linux-amd64/consoles
+    dest: /etc/prometheus/
+    owner: prometheus
+    group: prometheus
+    mode: "0755"
+    remote_src: true
+
+- name: Copy Prometheus console libraries
+  ansible.builtin.copy:
+    src: /tmp/prometheus-2.54.1.linux-amd64/console_libraries
+    dest: /etc/prometheus/
+    owner: prometheus
+    group: prometheus
+    mode: "0755"
+    remote_src: true
+
+- name: Copy Prometheus rule files
+  ansible.builtin.copy:
+    src: rules/
+    dest: /etc/prometheus/rules/
+    owner: prometheus
+    group: prometheus
+    mode: "0644"
+  notify: Restart prometheus
+
+- name: Render prometheus.yml
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    owner: prometheus
+    group: prometheus
+    mode: "0644"
+  notify: Restart prometheus
+
+- name: Validate Prometheus config
+  ansible.builtin.command: promtool check config /etc/prometheus/prometheus.yml
+  changed_when: false
+
+- name: Create Prometheus systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/prometheus.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Prometheus Monitoring
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      User=prometheus
+      Group=prometheus
+      Type=simple
+      ExecStart=/usr/local/bin/prometheus \
+        --config.file=/etc/prometheus/prometheus.yml \
+        --storage.tsdb.path=/var/lib/prometheus \
+        --web.console.templates=/etc/prometheus/consoles \
+        --web.console.libraries=/etc/prometheus/console_libraries
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Restart prometheus
+
+- name: Enable and start Prometheus
+  ansible.builtin.systemd:
+    name: prometheus
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Restart prometheus
+  ansible.builtin.systemd:
+    name: prometheus
+    state: restarted
+    daemon_reload: true
+  listen: Restart prometheus

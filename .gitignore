@@ -7,3 +7,12 @@
 ansible/inventory/hosts.ini
 ansible/group_vars/all.yml
 *.pem
+# Local Ansible inventory with real IPs/keys
+ansible/inventory/hosts.ini
+
+# SSH keys / local secrets
+*.pem
+*.key
+.env
+*.tfvars
+terraform.tfvars

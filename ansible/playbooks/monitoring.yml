@@ -1,9 +1,0 @@
----
-- name: Configure monitoring stack
-  hosts: monitoring
-  become: true
-
-  roles:
-    - prometheus
-    - node_exporter
-    - grafana

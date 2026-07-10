@@ -78,7 +78,8 @@ resource "aws_security_group" "web2_sg" {
 resource "aws_instance" "web1" {
   ami                         = var.aws_ami
   instance_type               = var.instance_type
-  key_name                    = var.key_name
+  key_name = var.key_name
+  iam_instance_profile   = var.iam_instance_profile
   subnet_id                   = var.public_subnet_id
   vpc_security_group_ids      = [aws_security_group.web1_sg.id]
   associate_public_ip_address = true
@@ -93,7 +94,8 @@ resource "aws_instance" "web1" {
 resource "aws_instance" "web2" {
   ami                         = var.aws_ami
   instance_type               = var.instance_type
-  key_name                    = var.key_name
+  key_name = var.key_name
+  iam_instance_profile   = var.iam_instance_profile
   subnet_id                   = var.private_subnet_id
   private_ip                  = var.web2_private_ip
   vpc_security_group_ids      = [aws_security_group.web2_sg.id]

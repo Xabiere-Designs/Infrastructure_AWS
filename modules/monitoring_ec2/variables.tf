@@ -15,8 +15,14 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  description = "Existing AWS EC2 key pair name"
+  description = "SSH key pair name for EC2 access"
   type        = string
+}
+
+variable "iam_instance_profile" {
+  description = "IAM instance profile to attach to EC2 instances for SSM access"
+  type        = string
+  default = null
 }
 
 variable "vpc_id" {

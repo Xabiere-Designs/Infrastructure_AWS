@@ -17,10 +17,15 @@ variable "instance_type" {
   default     = "t2.micro"
 }
 
-# Existing AWS key pair for SSH access
 variable "key_name" {
-  description = "Existing EC2 key pair name"
+  description = "SSH key pair name for EC2 access"
   type        = string
+}
+
+variable "iam_instance_profile" {
+  description = "IAM instance profile to attach to EC2 instances for SSM access"
+  type        = string
+  default = null
 }
 
 # Public IP allowed to SSH into web1

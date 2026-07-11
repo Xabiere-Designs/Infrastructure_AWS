@@ -50,13 +50,11 @@ resource "aws_security_group" "monitoring_sg" {
 resource "aws_instance" "monitoring" {
   ami                         = var.aws_ami
   instance_type               = var.instance_type
-  key_name = var.key_name
-  iam_instance_profile   = var.iam_instance_profile
+  key_name                    = var.key_name
+  iam_instance_profile        = var.iam_instance_profile
   subnet_id                   = var.private_subnet_id
   vpc_security_group_ids      = [aws_security_group.monitoring_sg.id]
   associate_public_ip_address = false
-  user_data                   = var.monitoring_user_data
-
   user_data_replace_on_change = true
 
   tags = merge(var.tags, {

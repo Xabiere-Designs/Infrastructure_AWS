@@ -46,7 +46,15 @@ resource "aws_security_group" "monitoring_sg" {
   })
 }
 
-# Dedicated EC2 instance for Prometheus and Grafana
+# Dedicated private EC2 host for the centralized monitoring and
+# observability tool.
+#
+# Terraform owns the infrastructure lifecycle of this instance:
+# AMI selection, instance sizing, subnet placement, IAM attachment,
+# security-group association, and tagging.
+#
+# Prometheus, Node Exporter, Grafana, and their runtime configuration
+# are installed and managed separately through reusable Ansible roles.
 resource "aws_instance" "monitoring" {
   ami                         = var.aws_ami
   instance_type               = var.instance_type
@@ -55,7 +63,10 @@ resource "aws_instance" "monitoring" {
   subnet_id                   = var.private_subnet_id
   vpc_security_group_ids      = [aws_security_group.monitoring_sg.id]
   associate_public_ip_address = false
-  user_data_replace_on_change = true
+
+  # There is intentionally no user_data configuration.
+  # Charlotte_2026 orchestrates runtime configuration with Ansible after
+  # Terraform provisions the monitoring instance.
 
   tags = merge(var.tags, {
     Name = "${var.project_name}-monitoring"

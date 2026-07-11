@@ -22,7 +22,7 @@ variable "key_name" {
 variable "iam_instance_profile" {
   description = "IAM instance profile to attach to EC2 instances for SSM access"
   type        = string
-  default = null
+  default     = null
 }
 
 variable "vpc_id" {
@@ -38,12 +38,6 @@ variable "private_subnet_id" {
 variable "web1_security_group_id" {
   description = "Security group ID for web1/bastion access"
   type        = string
-}
-
-variable "monitoring_user_data" {
-  description = "Startup script for monitoring server"
-  type        = string
-  default     = ""
 }
 
 variable "tags" {

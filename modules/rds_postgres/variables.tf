@@ -48,9 +48,9 @@ variable "allocated_storage" {
 }
 
 variable "engine_version" {
-  description = "PostgreSQL engine version."
+  description = "PostgreSQL engine version used when the consuming environment does not explicitly select one."
   type        = string
-  default     = "16.3"
+  default     = "<SUPPORTED_16_X_VERSION>"
 }
 
 variable "skip_final_snapshot" {

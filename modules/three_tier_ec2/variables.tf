@@ -34,31 +34,6 @@ variable "iam_instance_profile" {
   default     = null
 }
 
-# Controls whether the transitional public SSH rule is created.
-#
-# Production-style Session Manager access should leave this disabled.
-variable "enable_ssh_access" {
-  description = "Whether to create inbound SSH access for web1."
-  type        = bool
-  default     = false
-}
-
-# Optional CIDR used only when enable_ssh_access is true.
-variable "ssh_allowed_cidr" {
-  description = "CIDR permitted to reach web1 on port 22 when SSH fallback is enabled."
-  type        = string
-  default     = null
-  nullable    = true
-
-  validation {
-    condition = (
-      var.enable_ssh_access == false ||
-      var.ssh_allowed_cidr != null
-    )
-    error_message = "ssh_allowed_cidr must be supplied when enable_ssh_access is true."
-  }
-}
-
 # Public IP allowed to SSH into web1
 variable "my_ip_cidr" {
   description = "Your public IP in CIDR notation for SSH access"

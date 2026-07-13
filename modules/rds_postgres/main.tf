@@ -64,7 +64,7 @@ resource "aws_db_instance" "this" {
   deletion_protection = false
 
   # Basic safety and maintainability settings.
-  backup_retention_period = 1
+  backup_retention_period    = 1
   auto_minor_version_upgrade = true
 
   tags = merge(var.tags, {

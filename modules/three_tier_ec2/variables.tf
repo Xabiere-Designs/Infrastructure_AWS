@@ -17,15 +17,46 @@ variable "instance_type" {
   default     = "t2.micro"
 }
 
+# Optional EC2 key-pair name.
+#
+# When null, instances are created without an SSH key pair because Systems
+# Manager Session Manager is the primary administrative access path.
 variable "key_name" {
-  description = "SSH key pair name for EC2 access"
+  description = "Optional EC2 key-pair name retained only for temporary SSH fallback."
   type        = string
+  default     = null
+  nullable    = true
 }
 
 variable "iam_instance_profile" {
   description = "IAM instance profile to attach to EC2 instances for SSM access"
   type        = string
-  default = null
+  default     = null
+}
+
+# Controls whether the transitional public SSH rule is created.
+#
+# Production-style Session Manager access should leave this disabled.
+variable "enable_ssh_access" {
+  description = "Whether to create inbound SSH access for web1."
+  type        = bool
+  default     = false
+}
+
+# Optional CIDR used only when enable_ssh_access is true.
+variable "ssh_allowed_cidr" {
+  description = "CIDR permitted to reach web1 on port 22 when SSH fallback is enabled."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition = (
+      var.enable_ssh_access == false ||
+      var.ssh_allowed_cidr != null
+    )
+    error_message = "ssh_allowed_cidr must be supplied when enable_ssh_access is true."
+  }
 }
 
 # Public IP allowed to SSH into web1

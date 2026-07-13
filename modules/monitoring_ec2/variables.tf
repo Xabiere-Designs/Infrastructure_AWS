@@ -15,8 +15,10 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  description = "SSH key pair name for EC2 access"
+  description = "Optional EC2 key-pair name retained only for temporary SSH fallback."
   type        = string
+  default     = null
+  nullable    = true
 }
 
 variable "iam_instance_profile" {

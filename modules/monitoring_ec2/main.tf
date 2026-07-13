@@ -4,15 +4,6 @@ resource "aws_security_group" "monitoring_sg" {
   description = "Allow Prometheus and Grafana access for monitoring"
   vpc_id      = var.vpc_id
 
-  # Allow SSH only from web1/bastion security group
-  ingress {
-    description     = "SSH from web1 bastion"
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [var.web1_security_group_id]
-  }
-
   # Allow Prometheus UI access from web1/bastion
   ingress {
     description     = "Prometheus UI from web1 bastion"

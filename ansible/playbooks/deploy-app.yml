@@ -1,0 +1,17 @@
+---
+- name: Deploy charlotte-api to web2
+  hosts: app
+  become: true
+  vars:
+    app_container_name: "charlotte-api"
+    app_container_image: "xabiere15/charlotte-api:latest"
+    app_container_port: 8080
+    app_container_env:
+      SPRING_DATASOURCE_USERNAME: "charlotte_app"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://charlotte-2026-postgres.cyfrxzpujggd.us-east-1.rds.amazonaws.com:5432/charlottedb"
+    app_container_secret_id: "charlotte-2026/database/app-password"
+    app_container_secret_region: "us-east-1"
+    app_container_secret_env_var: "DB_PASSWORD"
+    app_container_secret_json_key: "password"
+  roles:
+    - app_container

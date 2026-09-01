@@ -34,6 +34,13 @@ variable "iam_instance_profile" {
   default     = null
 }
 
+variable "web2_iam_instance_profile" {
+  description = "Optional dedicated IAM instance profile for web2. Falls back to iam_instance_profile if null."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 # Public IP allowed to SSH into web1
 variable "my_ip_cidr" {
   description = "Your public IP in CIDR notation for SSH access"

@@ -117,7 +117,7 @@ resource "aws_instance" "web2" {
   ami                         = var.aws_ami
   instance_type               = var.instance_type
   key_name                    = var.key_name
-  iam_instance_profile        = var.iam_instance_profile
+  iam_instance_profile        = coalesce(var.web2_iam_instance_profile, var.iam_instance_profile)
   subnet_id                   = var.private_subnet_id
   private_ip                  = var.web2_private_ip
   vpc_security_group_ids      = [aws_security_group.web2_sg.id]

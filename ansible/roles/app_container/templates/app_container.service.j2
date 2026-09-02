@@ -1,0 +1,27 @@
+[Unit]
+Description={{ app_container_name }} container (managed by systemd)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=5
+{% if app_container_secret_env_var %}
+EnvironmentFile=/etc/{{ app_container_name }}.env
+{% endif %}
+# Clean up any prior container before starting
+ExecStartPre=-/usr/bin/docker stop {{ app_container_name }}
+ExecStartPre=-/usr/bin/docker rm {{ app_container_name }}
+ExecStart=/usr/bin/docker run --rm --name {{ app_container_name }} \
+  -p {{ app_container_port }}:{{ app_container_port }} \
+{% for key, value in app_container_env.items() %}
+  -e {{ key }}={{ value }} \
+{% endfor %}
+{% if app_container_secret_env_var %}
+  -e {{ app_container_secret_env_var }}=${SECRET_VALUE} \
+{% endif %}
+  {{ app_container_image }}
+ExecStop=/usr/bin/docker stop {{ app_container_name }}
+
+[Install]
+WantedBy=multi-user.target

@@ -71,6 +71,17 @@ resource "aws_security_group" "web2_sg" {
     security_groups = [aws_security_group.web1_sg.id]
   }
 
+  # Allows the Application Load Balancer to forward traffic directly to the
+  # private application server. Added alongside the web1 path so NGINX ingress
+  # stays live during the ALB migration.
+  ingress {
+    description     = "Application traffic from ALB"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = var.alb_security_group_id != null ? [var.alb_security_group_id] : []
+  }
+
   # Allows the private application server to reach package repositories,
   # container registries, AWS services, RDS, and other approved destinations.
   egress {

@@ -71,7 +71,7 @@ resource "aws_security_group" "web2_sg" {
     security_groups = [aws_security_group.web1_sg.id]
   }
 
-# node_exporter scrape from monitoring host
+  # node_exporter scrape from monitoring host
   dynamic "ingress" {
     for_each = var.monitoring_security_group_id != null ? [var.monitoring_security_group_id] : []
     content {

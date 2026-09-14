@@ -91,9 +91,16 @@ variable "web2_user_data" {
 # receives its ID here and references it as the source for the web2 8080
 # ingress rule. This lets ALB traffic reach the private application server
 # directly while the web1/NGINX path remains live during migration.
+
 variable "alb_security_group_id" {
   description = "Security group ID of the ALB, used as the ingress source for web2 application traffic."
   type        = string
   default     = null
   nullable    = true
+}
+
+variable "monitoring_security_group_id" {
+  type     = string
+  default  = null
+  nullable = true
 }

@@ -71,6 +71,17 @@ resource "aws_security_group" "web2_sg" {
     security_groups = [aws_security_group.web1_sg.id]
   }
 
+  # node_exporter scrape from monitoring host
+  dynamic "ingress" {
+    for_each = var.monitoring_security_group_id != null ? [var.monitoring_security_group_id] : []
+    content {
+      from_port       = 9100
+      to_port         = 9100
+      protocol        = "tcp"
+      security_groups = [ingress.value]
+    }
+  }
+
   # Allows the Application Load Balancer to forward traffic directly to the
   # private application server. Added alongside the web1 path so NGINX ingress
   # stays live during the ALB migration.

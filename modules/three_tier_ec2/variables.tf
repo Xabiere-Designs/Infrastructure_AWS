@@ -17,17 +17,6 @@ variable "instance_type" {
   default     = "t2.micro"
 }
 
-# Optional EC2 key-pair name.
-#
-# When null, instances are created without an SSH key pair because Systems
-# Manager Session Manager is the primary administrative access path.
-variable "key_name" {
-  description = "Optional EC2 key-pair name retained only for temporary SSH fallback."
-  type        = string
-  default     = null
-  nullable    = true
-}
-
 variable "iam_instance_profile" {
   description = "IAM instance profile to attach to EC2 instances for SSM access"
   type        = string
@@ -41,19 +30,13 @@ variable "web2_iam_instance_profile" {
   nullable    = true
 }
 
-# Public IP allowed to SSH into web1
-variable "my_ip_cidr" {
-  description = "Your public IP in CIDR notation for SSH access"
-  type        = string
-}
-
 # VPC created by the VPC module
 variable "vpc_id" {
   description = "ID of the VPC to deploy resources in"
   type        = string
 }
 
-# Public subnet where the NGINX/bastion host will reside
+# Public subnet where the NGINX host will reside
 variable "public_subnet_id" {
   description = "ID of the public subnet for the web server"
   type        = string
@@ -85,22 +68,51 @@ variable "web2_user_data" {
   default     = ""
 }
 
-# Security group ID of the Application Load Balancer.
-#
-# The ALB security group is created in the root configuration, so the module
-# receives its ID here and references it as the source for the web2 8080
-# ingress rule. This lets ALB traffic reach the private application server
-# directly while the web1/NGINX path remains live during migration.
-
+# Security group ID of the Application Load Balancer (created in the root).
+# Source for web2 app-port ingress while the NGINX path remains live.
 variable "alb_security_group_id" {
-  description = "Security group ID of the ALB, used as the ingress source for web2 application traffic."
+  description = "Security group ID of the ALB; ingress source for web2 app traffic."
   type        = string
-  default     = null
-  nullable    = true
 }
 
+# Security group ID of the monitoring host (created in the root).
+# Source for blackbox probes and node_exporter scrapes into web2.
 variable "monitoring_security_group_id" {
-  type     = string
-  default  = null
-  nullable = true
+  description = "Security group ID of the monitoring host; source for probe and scrape ingress."
+  type        = string
+}
+
+# Port the application listens on (NGINX upstream, ALB target, blackbox probe)
+variable "app_port" {
+  description = "Port the web2 application listens on"
+  type        = number
+  default     = 8080
+}
+
+# Port NGINX listens on for public HTTP
+variable "http_port" {
+  description = "HTTP port exposed by NGINX on web1"
+  type        = number
+  default     = 80
+}
+
+# Port node_exporter listens on
+variable "node_exporter_port" {
+  description = "Port node_exporter listens on for Prometheus scrapes"
+  type        = number
+  default     = 9100
+}
+
+# CIDRs allowed to reach NGINX over HTTP
+variable "web1_http_ingress_cidrs" {
+  description = "IPv4 CIDRs allowed HTTP access to web1"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+# Destination CIDR for outbound traffic from both instances
+variable "egress_cidr_ipv4" {
+  description = "IPv4 CIDR for outbound traffic from web1 and web2"
+  type        = string
+  default     = "0.0.0.0/0"
 }

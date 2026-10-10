@@ -14,13 +14,6 @@ variable "instance_type" {
   default     = "t3.small"
 }
 
-variable "key_name" {
-  description = "Optional EC2 key-pair name retained only for temporary SSH fallback."
-  type        = string
-  default     = null
-  nullable    = true
-}
-
 variable "iam_instance_profile" {
   description = "IAM instance profile to attach to EC2 instances for SSM access"
   type        = string

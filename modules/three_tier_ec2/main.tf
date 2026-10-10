@@ -1,122 +1,103 @@
-# Security group for the public NGINX reverse proxy and temporary bastion host.
+# Security group for the public NGINX reverse proxy (web1).
 #
-# Charlotte_2026 currently retains SSH as a transitional fallback while the
-# application, RDS, monitoring, and existing Ansible execution path are
-# validated. A later dedicated migration will remove port 22 and make
-# Systems Manager the primary configuration and administration path.
+# All rules are managed as standalone aws_vpc_security_group_*_rule resources.
+# Do not add inline ingress/egress blocks here: inline and standalone rules on
+# the same SG overwrite each other on every apply (see NM-002).
 resource "aws_security_group" "web1_sg" {
   name        = "${var.project_name}-web1-sg"
-  description = "Allow HTTP and temporary SSH access to web1"
+  description = "NGINX reverse proxy - rules managed as standalone resources"
   vpc_id      = var.vpc_id
-
-  # Temporary administrative access from the approved public CIDR.
-  ingress {
-    description = "SSH from approved administrator CIDR"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.my_ip_cidr]
-  }
-
-  # Public application traffic currently enters through web1 and NGINX.
-  # This ingress path will later move behind an Application Load Balancer.
-  ingress {
-    description = "HTTP from internet"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Allows package installation, AWS API access, and communication with
-  # private application resources.
-  egress {
-    description = "Allow outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = {
     Name = "${var.project_name}-web1-sg"
   }
 }
 
-# Security group for the private application server.
+# Public HTTP into NGINX. Moves behind the ALB in a later migration.
+resource "aws_vpc_security_group_ingress_rule" "web1_http" {
+  for_each = toset(var.web1_http_ingress_cidrs)
+
+  security_group_id = aws_security_group.web1_sg.id
+  description       = "HTTP to NGINX"
+  ip_protocol       = "tcp"
+  from_port         = var.http_port
+  to_port           = var.http_port
+  cidr_ipv4         = each.value
+}
+
+# Package installs, AWS APIs (incl. SSM), and private app traffic.
+resource "aws_vpc_security_group_egress_rule" "web1_all" {
+  security_group_id = aws_security_group.web1_sg.id
+  description       = "Allow outbound traffic"
+  ip_protocol       = "-1"
+  cidr_ipv4         = var.egress_cidr_ipv4
+}
+
+# Security group for the private application server (web2).
 #
-# Only web1 is permitted to reach the application service and temporary SSH
-# path. The private application server is not directly exposed to the internet.
+# Same rule as web1: standalone rules only, no inline blocks.
 resource "aws_security_group" "web2_sg" {
   name        = "${var.project_name}-web2-sg"
-  description = "Allow web1 to reach the private application server"
+  description = "Private app server - rules managed as standalone resources"
   vpc_id      = var.vpc_id
-
-  # Temporary SSH path from web1 while the bastion-based Ansible transport
-  # remains active.
-  ingress {
-    description     = "SSH from web1"
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.web1_sg.id]
-  }
-
-  # Allows NGINX on web1 to forward application traffic to web2.
-  ingress {
-    description     = "Application traffic from web1"
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.web1_sg.id]
-  }
-
-  # node_exporter scrape from monitoring host
-  dynamic "ingress" {
-    for_each = var.monitoring_security_group_id != null ? [var.monitoring_security_group_id] : []
-    content {
-      from_port       = 9100
-      to_port         = 9100
-      protocol        = "tcp"
-      security_groups = [ingress.value]
-    }
-  }
-
-  # Allows the Application Load Balancer to forward traffic directly to the
-  # private application server. Added alongside the web1 path so NGINX ingress
-  # stays live during the ALB migration.
-  ingress {
-    description     = "Application traffic from ALB"
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = var.alb_security_group_id != null ? [var.alb_security_group_id] : []
-  }
-
-  # Allows the private application server to reach package repositories,
-  # container registries, AWS services, RDS, and other approved destinations.
-  egress {
-    description = "Allow outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = {
     Name = "${var.project_name}-web2-sg"
   }
 }
 
-# Public NGINX reverse proxy and temporary bastion EC2 instance.
-#
-# Terraform provisions the instance and passes the existing NGINX bootstrap
-# content. Administrative SSH remains temporary while Session Manager and the
-# future ALB-based ingress model are validated as separate migrations.
+# NGINX on web1 forwards application traffic to web2.
+resource "aws_vpc_security_group_ingress_rule" "web2_app_from_web1" {
+  security_group_id            = aws_security_group.web2_sg.id
+  description                  = "App traffic from web1 NGINX"
+  ip_protocol                  = "tcp"
+  from_port                    = var.app_port
+  to_port                      = var.app_port
+  referenced_security_group_id = aws_security_group.web1_sg.id
+}
+
+# ALB forwards directly to web2 while the NGINX path stays live.
+resource "aws_vpc_security_group_ingress_rule" "web2_app_from_alb" {
+  security_group_id            = aws_security_group.web2_sg.id
+  description                  = "App traffic from ALB"
+  ip_protocol                  = "tcp"
+  from_port                    = var.app_port
+  to_port                      = var.app_port
+  referenced_security_group_id = var.alb_security_group_id
+}
+
+# Blackbox HTTP probe from the monitoring host.
+resource "aws_vpc_security_group_ingress_rule" "web2_app_from_monitoring" {
+  security_group_id            = aws_security_group.web2_sg.id
+  description                  = "Blackbox probe from monitoring"
+  ip_protocol                  = "tcp"
+  from_port                    = var.app_port
+  to_port                      = var.app_port
+  referenced_security_group_id = var.monitoring_security_group_id
+}
+
+# node_exporter scrape from the monitoring host.
+resource "aws_vpc_security_group_ingress_rule" "web2_node_exporter_from_monitoring" {
+  security_group_id            = aws_security_group.web2_sg.id
+  description                  = "node_exporter scrape from monitoring"
+  ip_protocol                  = "tcp"
+  from_port                    = var.node_exporter_port
+  to_port                      = var.node_exporter_port
+  referenced_security_group_id = var.monitoring_security_group_id
+}
+
+# Package repos, registries, AWS APIs (incl. SSM), and RDS.
+resource "aws_vpc_security_group_egress_rule" "web2_all" {
+  security_group_id = aws_security_group.web2_sg.id
+  description       = "Allow outbound traffic"
+  ip_protocol       = "-1"
+  cidr_ipv4         = var.egress_cidr_ipv4
+}
+
+# Public NGINX reverse proxy. Administered via SSM Session Manager only.
 resource "aws_instance" "web1" {
   ami                         = var.aws_ami
   instance_type               = var.instance_type
-  key_name                    = var.key_name
   iam_instance_profile        = var.iam_instance_profile
   subnet_id                   = var.public_subnet_id
   vpc_security_group_ids      = [aws_security_group.web1_sg.id]
@@ -126,19 +107,15 @@ resource "aws_instance" "web1" {
   user_data_replace_on_change = false
 
   tags = {
-    Name = "${var.project_name}-web1-nginx-bastion"
+    Name = "${var.project_name}-web1-nginx"
   }
 }
 
-# Private application EC2 instance.
-#
-# The application host keeps a predictable private IP because the current
-# NGINX bootstrap configuration points web1 at this address. A future ALB and
-# target-group design will reduce this static-address dependency.
+# Private application server. Static private IP because the NGINX bootstrap
+# config points at it; the ALB/target-group design will remove that dependency.
 resource "aws_instance" "web2" {
   ami                         = var.aws_ami
   instance_type               = var.instance_type
-  key_name                    = var.key_name
   iam_instance_profile        = coalesce(var.web2_iam_instance_profile, var.iam_instance_profile)
   subnet_id                   = var.private_subnet_id
   private_ip                  = var.web2_private_ip

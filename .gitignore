@@ -16,3 +16,4 @@ ansible/inventory/hosts.ini
 .env
 *.tfvars
 terraform.tfvars
+.terraform/
